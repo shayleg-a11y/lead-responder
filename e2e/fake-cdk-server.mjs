@@ -11,13 +11,14 @@ const leads = {
 const sessions = new Set();
 const page = (title, body) => `<!doctype html><html><head><title>${title}</title></head><body><header><span id="user-menu">Jordan S.</span></header>${body}</body></html>`;
 
-export function startFakeCdk(port = 4790) {
+export function startFakeCdk(port = 4790, opts = {}) {
   const srv = http.createServer((req, res) => {
     const url = new URL(req.url, `http://localhost:${port}`);
     const cookie = req.headers.cookie || "";
     const loggedIn = /sid=ok/.test(cookie);
     const send = (html, status = 200, headers = {}) => { res.writeHead(status, { "content-type": "text/html", ...headers }); res.end(html); };
     if (url.pathname === "/login" && req.method === "POST") return send("", 302, { "set-cookie": "sid=ok; Path=/", location: "/leads" });
+    if (!loggedIn && opts.autoLogin) return send("", 302, { "set-cookie": "sid=ok; Path=/", location: "/leads" });
     if (!loggedIn) return send(`<!doctype html><html><body><form method="post" action="/login"><input name="u"><input type="password" name="p"><button>Sign in</button></form></body></html>`);
     if (url.pathname === "/" || url.pathname === "/leads") {
       const rows = Object.entries(leads).map(([id, l]) => `<tr class="lead-row" data-lead-id="${id}"><td class="lead-name"><a href="/leads/${id}">${l.name}</a></td><td class="lead-vehicle">${l.vehicle}</td><td class="lead-source">${l.source}</td><td class="lead-created">${l.created}</td></tr>`).join("");
