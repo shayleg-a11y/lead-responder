@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lead Responder</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#15171a; --muted:#6b7280; --line:#e5e7eb; --accent:#1d4ed8; --ok:#15803d; --warn:#b45309; --bad:#b91c1c; --live:#dc2626; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background:var(--bg); color:var(--ink); }
+  header { background:#fff; border-bottom:1px solid var(--line); padding:12px 20px; display:flex; align-items:center; gap:16px; position:sticky; top:0; z-index:5; }
+  header h1 { font-size:17px; margin:0; font-weight:650; }
+  .spacer { flex:1; }
+  main { max-width:1100px; margin:0 auto; padding:20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-bottom:16px; }
+  .card h2 { margin:0 0 6px; font-size:16px; }
+  .muted { color:var(--muted); }
+  label { display:block; font-size:13px; color:var(--muted); margin:12px 0 4px; }
+  input[type=text], input[type=url], input[type=password], input[type=time], textarea, select { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px; font:inherit; background:#fff; }
+  textarea { min-height:84px; resize:vertical; }
+  button { font:inherit; padding:10px 16px; border-radius:8px; border:1px solid var(--line); background:#fff; cursor:pointer; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.danger { background:var(--live); color:#fff; border-color:var(--live); }
+  button:disabled { opacity:.5; cursor:default; }
+  .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .actions { margin-top:18px; display:flex; gap:10px; justify-content:flex-end; }
+  .steps { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+  .steps span { font-size:12px; padding:4px 10px; border-radius:999px; background:#eef0f3; color:var(--muted); }
+  .steps span.on { background:var(--accent); color:#fff; }
+  .steps span.done { background:#dcfce7; color:var(--ok); }
+  .hours { display:grid; grid-template-columns: 60px 1fr 1fr 70px; gap:8px 10px; align-items:center; }
+  .hours div { font-size:14px; }
+  .pill { display:inline-block; font-size:12px; padding:2px 9px; border-radius:999px; background:#eef0f3; }
+  .pill.new{background:#e0e7ff;color:#3730a3} .pill.contacted{background:#e0f2fe;color:#075985} .pill.engaged{background:#dcfce7;color:#166534}
+  .pill.appointment{background:#fef3c7;color:#92400e;font-weight:600} .pill.needs_you{background:#fee2e2;color:#991b1b;font-weight:600}
+  .pill.opted_out{background:#f3f4f6;color:#6b7280} .pill.closed{background:#f3f4f6;color:#6b7280}
+  .stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap:12px; }
+  .stat { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .stat b { display:block; font-size:24px; font-weight:650; }
+  .stat span { font-size:12px; color:var(--muted); }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:9px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-size:12px; color:var(--muted); font-weight:600; }
+  tr.click { cursor:pointer; } tr.click:hover td { background:#fafafa; }
+  .log { max-height:420px; overflow:auto; font-size:13px; }
+  .log div { padding:6px 0; border-bottom:1px solid #f1f2f4; display:flex; gap:10px; }
+  .log time { color:var(--muted); white-space:nowrap; min-width:64px; }
+  .lvl-send{color:var(--ok)} .lvl-draft{color:#475569} .lvl-warn{color:var(--warn)} .lvl-error{color:var(--bad)} .lvl-needs_you{color:var(--bad);font-weight:600} .lvl-appointment{color:#92400e;font-weight:600}
+  .switch { display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden; }
+  .switch button { border:0; border-radius:0; padding:8px 16px; }
+  .switch button.on.practice { background:#e0e7ff; color:#3730a3; font-weight:600; }
+  .switch button.on.live { background:var(--live); color:#fff; font-weight:600; }
+  .banner { padding:12px 16px; border-radius:10px; margin-bottom:16px; font-size:14px; }
+  .banner.warn { background:#fef3c7; color:#92400e; } .banner.bad { background:#fee2e2; color:#991b1b; } .banner.info { background:#e0f2fe; color:#075985; }
+  .needs { border-color:#fecaca; background:#fff7f7; }
+  .two { display:grid; grid-template-columns: 1fr 1fr; gap:16px; } @media (max-width:800px){ .two{grid-template-columns:1fr} }
+  dialog { border:0; border-radius:12px; padding:0; width:min(720px, 94vw); }
+  dialog .inner { padding:20px; }
+  .thread { max-height:300px; overflow:auto; background:#f8fafc; border:1px solid var(--line); border-radius:8px; padding:10px; font-size:13px; }
+  .msg { margin:6px 0; padding:8px 10px; border-radius:10px; max-width:85%; white-space:pre-wrap; }
+  .msg.inbound { background:#fff; border:1px solid var(--line); } .msg.outbound { background:#dbeafe; margin-left:auto; }
+  .msg small { display:block; color:var(--muted); font-size:11px; margin-top:4px; }
+  .teach li { margin:8px 0; display:flex; gap:10px; align-items:center; }
+  .teach .ok { color:var(--ok); font-weight:600; }
+  code { background:#f1f2f4; padding:1px 5px; border-radius:4px; font-size:13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Lead Responder</h1>
+  <span id="hdr-sub" class="muted"></span>
+  <div class="spacer"></div>
+  <div id="hdr-controls" class="row" style="display:none">
+    <span id="brain-pill" class="pill"></span>
+    <div class="switch">
+      <button id="btn-practice" class="practice" onclick="setMode('practice')">Practice</button>
+      <button id="btn-live" class="live" onclick="setMode('live')">Live</button>
+    </div>
+    <button id="btn-pause" onclick="togglePause()">Pause</button>
+    <button onclick="openSettings()">Settings</button>
+  </div>
+</header>
+
+<main>
+  <!-- ================= WIZARD ================= -->
+  <section id="wizard" style="display:none">
+    <div class="steps" id="wiz-steps"></div>
+    <div class="card" id="wiz-card"></div>
+  </section>
+
+  <!-- ================= DASHBOARD ================= -->
+  <section id="dash" style="display:none">
+    <div id="banners"></div>
+    <div class="stats" id="stats"></div>
+    <div class="two" style="margin-top:16px">
+      <div class="card needs">
+        <h2>Needs you</h2>
+        <div class="muted" style="font-size:13px">Leads the AI stopped on. Text them yourself in CDK, then mark done.</div>
+        <div id="needs"></div>
+      </div>
+      <div class="card">
+        <h2>Activity</h2>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row"><h2 style="margin:0">Leads</h2><div class="spacer"></div>
+        <button id="btn-demo-lead" style="display:none" onclick="demoLead()">+ Demo lead</button></div>
+      <table><thead><tr><th>Lead</th><th>Vehicle</th><th>Source</th><th>Stage</th><th>Where it stands</th><th>Last touch</th></tr></thead>
+      <tbody id="leads"></tbody></table>
+    </div>
+  </section>
+</main>
+
+<dialog id="dlg"><div class="inner" id="dlg-body"></div></dialog>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const api = async (url, body, method) => {
+  const r = await fetch(url, { method: method || (body ? 'POST' : 'GET'), headers: {'content-type':'application/json'}, body: body ? JSON.stringify(body) : undefined });
+  return r.json();
+};
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const STAGE = {new:'New',contacted:'Contacted',engaged:'Engaged',appointment:'Appointment',needs_you:'Needs you',opted_out:'Opted out',closed:'Closed'};
+let state = null, wizStep = 0, wizDraft = null;
+const WIZ = ['CDK address','Log in','About you','Store hours','Appointments','Activation key','Teach CDK','Done'];
+
+async function refresh() {
+  state = await api('/api/state');
+  $('#hdr-sub').textContent = state.demo ? 'Demo — fake CRM, nothing real is sent' : (state.profile.storeName || '');
+  if (!state.setupComplete && !state.demo) { renderWizard(); } else { renderDash(); }
+}
+
+/* ---------------- wizard ---------------- */
+function renderWizard() {
+  $('#wizard').style.display = ''; $('#dash').style.display = 'none'; $('#hdr-controls').style.display = 'none';
+  if (!wizDraft) wizDraft = { crmUrl: state.crmUrl, profile: JSON.parse(JSON.stringify(state.profile)), key: '' };
+  $('#wiz-steps').innerHTML = WIZ.map((w,i) => `<span class="${i===wizStep?'on':i<wizStep?'done':''}">${i+1}. ${w}</span>`).join('');
+  const p = wizDraft.profile;
+  const nav = (next=true, back=true, label='Continue') => `<div class="actions">${back && wizStep>0 ? `<button onclick="wiz(-1)">Back</button>`:''}${next?`<button class="primary" onclick="wiz(1)">${label}</button>`:''}</div>`;
+  let h = '';
+  switch (wizStep) {
+    case 0: h = `<h2>Where is your CDK?</h2><p class="muted">Paste the web address you use to open CDK Connect every day.</p>
+      <label>CDK web address</label><input type="url" id="f-crmUrl" placeholder="https://..." value="${esc(wizDraft.crmUrl)}">` + nav(); break;
+    case 1: h = `<h2>Log in once</h2><p class="muted">A browser window will open on your CDK login page. Log in like you normally do (2-step codes are fine). Your login is remembered on this computer only.</p>
+      <div class="row"><button class="primary" onclick="openLogin()">Open CDK login</button><span id="login-status" class="muted"></span></div>` + nav(true,true,'I\'m logged in'); break;
+    case 2: h = `<h2>About you</h2>
+      <label>Your name (as customers should see it)</label><input type="text" id="f-repName" value="${esc(p.repName)}" placeholder="Jordan Smith">
+      <label>Your title</label><input type="text" id="f-repTitle" value="${esc(p.repTitle)}" placeholder="Sales Consultant">
+      <label>Dealership name</label><input type="text" id="f-storeName" value="${esc(p.storeName)}" placeholder="Example Toyota of Irvine">` + nav(); break;
+    case 3: h = `<h2>Store hours</h2><p class="muted">The AI only offers visit times inside these hours. Texts never go out 9 pm – 8 am regardless.</p>
+      <label>Time zone</label><input type="text" id="f-tz" value="${esc(p.timezone)}">
+      <div class="hours" style="margin-top:12px">${DAYS.map((d,i)=>{const hh=p.hours[i];return `<div>${d}</div><input type="time" id="o${i}" value="${hh?hh.open:''}" ${hh?'':'disabled'}><input type="time" id="c${i}" value="${hh?hh.close:''}" ${hh?'':'disabled'}><label style="margin:0"><input type="checkbox" id="x${i}" ${hh?'':'checked'} onchange="toggleDay(${i})"> closed</label>`}).join('')}</div>` + nav(); break;
+    case 4: h = `<h2>What counts as an appointment?</h2><p class="muted">In your own words. When a customer's reply matches this, the lead is marked <b>Appointment</b> and you get pinged.</p>
+      <textarea id="f-appt">${esc(p.appointmentDefinition)}</textarea>
+      <label>Phrases to always use (optional)</label><input type="text" id="f-always" value="${esc(p.alwaysSay||'')}" placeholder="e.g. mention our complimentary car wash">
+      <label>Phrases to never use (optional)</label><input type="text" id="f-never" value="${esc(p.neverSay||'')}" placeholder="e.g. never say 'deal'">` + nav(); break;
+    case 5: h = `<h2>Activation key</h2><p class="muted">${state.hasKey ? 'A key is already in place — you can skip this.' : 'Paste the activation key you were given. Without it, the app runs on built-in templates only.'}</p>
+      <input type="password" id="f-key" placeholder="sk-ant-..." value="">` + nav(true,true, state.hasKey ? 'Skip' : 'Continue'); break;
+    case 6: h = `<h2>Teach it CDK</h2><p class="muted">The app learns where things are on <i>your</i> CDK screens — about 3 minutes. Open each screen in the CDK window, come back here and press <b>Got it</b>.</p>
+      <div class="row" style="margin:10px 0"><button onclick="api('/api/teach/show',{})">Bring up the CDK window</button></div>
+      <ol class="teach" id="teach-list"></ol>
+      <div class="row"><button class="primary" id="btn-learn" onclick="learn()">Learn CDK</button><span id="learn-status" class="muted"></span></div>
+      <div class="actions"><button onclick="wiz(-1)">Back</button><button id="btn-teach-next" class="primary" onclick="wiz(1)" disabled>Continue</button><button onclick="wiz(1)" class="muted" style="border:0;background:none">Skip for now</button></div>`; break;
+    case 7: h = `<h2>You're set</h2><p>Lead Responder starts in <b>Practice mode</b>: it drafts every message so you can read them, but sends nothing. When the drafts sound like you, flip the switch to <b>Live</b>.</p>
+      <div class="actions"><button onclick="wiz(-1)">Back</button><button class="primary" onclick="finishSetup()">Open dashboard</button></div>`; break;
+  }
+  $('#wiz-card').innerHTML = h;
+  if (wizStep === 1) pollLogin();
+  if (wizStep === 6) renderTeach();
+}
+function toggleDay(i){ const off=$('#x'+i).checked; $('#o'+i).disabled=off; $('#c'+i).disabled=off; }
+function collect() {
+  const p = wizDraft.profile;
+  switch (wizStep) {
+    case 0: wizDraft.crmUrl = $('#f-crmUrl').value.trim(); break;
+    case 2: p.repName=$('#f-repName').value.trim(); p.repTitle=$('#f-repTitle').value.trim(); p.storeName=$('#f-storeName').value.trim(); break;
+    case 3: p.timezone=$('#f-tz').value.trim(); for(let i=0;i<7;i++){ p.hours[i] = $('#x'+i).checked ? null : {open:$('#o'+i).value||'09:00', close:$('#c'+i).value||'20:00'}; } break;
+    case 4: p.appointmentDefinition=$('#f-appt').value.trim(); p.alwaysSay=$('#f-always').value.trim(); p.neverSay=$('#f-never').value.trim(); break;
+    case 5: wizDraft.key = $('#f-key').value.trim(); break;
+  }
+}
+async function wiz(dir) {
+  if (dir > 0) {
+    collect();
+    if (wizStep===0 && !/^https?:\/\//.test(wizDraft.crmUrl)) return alert('Please paste the full CDK address starting with https://');
+    if (wizStep===2 && !wizDraft.profile.repName) return alert('Please enter your name.');
+    const body = { crmUrl: wizDraft.crmUrl, profile: wizDraft.profile };
+    if (wizStep===5 && wizDraft.key) body.anthropicApiKey = wizDraft.key;
+    state = await api('/api/settings', body);
+  }
+  wizStep = Math.max(0, Math.min(WIZ.length-1, wizStep+dir));
+  renderWizard();
+}
+async function openLogin(){ await api('/api/login/open',{}); $('#login-status').textContent='Waiting for you to log in…'; pollLogin(); }
+async function pollLogin(){ if (wizStep!==1) return; const r=await api('/api/login/status'); const el=$('#login-status'); if(!el) return;
+  el.textContent = r.loginState==='ok'?'✓ Logged in':r.loginState==='waiting'?'Waiting for you to log in…':r.loginState==='failed'?'Didn\'t see a login — try again':'';
+  if (r.loginState==='waiting') setTimeout(pollLogin, 2000); }
+async function renderTeach(){ const t=await api('/api/teach/status'); const el=$('#teach-list'); if(!el) return;
+  el.innerHTML = t.steps.map(s=>`<li><button onclick="snap('${s.key}')">Got it</button><span><b>${s.title}</b> — <span class="muted">${esc(s.help)}</span></span>${t.have.includes(s.key)?'<span class="ok">saved</span>':''}</li>`).join('');
+  if (t.mapped) { $('#learn-status').textContent='✓ CDK is mapped and verified.'; $('#btn-teach-next').disabled=false; } }
+async function snap(step){ const r=await api('/api/teach/snapshot',{step}); if(!r.ok) alert(r.error||'Could not save'); renderTeach(); }
+async function learn(){ $('#btn-learn').disabled=true; $('#learn-status').textContent='Learning… (30–60 s)'; const r=await api('/api/teach/learn',{}); $('#btn-learn').disabled=false;
+  if (r.ok) { $('#learn-status').textContent='✓ CDK is mapped and verified.'; $('#btn-teach-next').disabled=false; }
+  else $('#learn-status').textContent = 'Try again — could not find: ' + (r.missing||[]).join(', ') + (r.error?` (${r.error})`:'') + '. Make sure a lead is open with the text box showing, then press Learn again.';
+}
+async function finishSetup(){ await api('/api/teach/done',{}); state = await api('/api/setup/complete',{}); wizDraft=null; renderDash(); }
+
+/* ---------------- dashboard ---------------- */
+function renderDash() {
+  $('#wizard').style.display='none'; $('#dash').style.display=''; $('#hdr-controls').style.display='';
+  $('#btn-practice').classList.toggle('on', state.mode==='practice'); $('#btn-live').classList.toggle('on', state.mode==='live');
+  $('#btn-pause').textContent = state.paused ? 'Resume' : 'Pause';
+  $('#brain-pill').textContent = state.brain==='claude' ? 'AI: on' : 'AI: templates (no key)';
+  $('#btn-demo-lead').style.display = state.demo ? '' : 'none';
+  const b=[];
+  if (state.paused) b.push(['warn','Paused — nothing is being sent or drafted. Press Resume when ready.']);
+  if (!state.mapped) b.push(['bad','CDK layout not mapped — the app will not act until it learns your screens. <button onclick="startTeach()">Teach CDK</button>']);
+  if (!state.sessionValid) b.push(['bad','CDK session expired. <button onclick="reconnect()">Reconnect</button> and log in once.']);
+  if (state.mode==='practice' && state.mapped) b.push(['info','Practice mode: every message is drafted in the Activity log but <b>nothing is sent</b>. Flip to Live when the drafts sound like you.']);
+  if (state.mode==='live') b.push(['warn','<b>LIVE</b> — messages are really going out under your name.']);
+  if (state.lastError) b.push(['bad','Last error: '+esc(state.lastError)]);
+  $('#banners').innerHTML = b.map(([c,t])=>`<div class="banner ${c}">${t}</div>`).join('');
+  const s=state.stats;
+  $('#stats').innerHTML = [['Leads',s.total],['Contacted',s.contacted],['Replied',s.replied],['Appointments',s.appointments],['Needs you',s.needsYou],['Sent today',s.sentToday]].map(([k,v])=>`<div class="stat"><b>${v}</b><span>${k}</span></div>`).join('');
+  const needs = state.leads.filter(l=>l.stage==='needs_you');
+  $('#needs').innerHTML = needs.length ? needs.map(l=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><b>${esc(l.name)}</b> <span class="muted">${esc(l.vehicle||'')}</span><div style="font-size:13px">${esc(l.needs_you_reason||'')}</div>
+    <div class="row" style="margin-top:6px"><button onclick="openLead('${l.id}')">View</button><button onclick="setStage('${l.id}','engaged')">I handled it — resume AI</button><button onclick="setStage('${l.id}','closed')">Close</button></div></div>`).join('') : '<p class="muted" style="margin:10px 0 0">Nothing right now.</p>';
+  $('#log').innerHTML = state.events.map(e=>`<div><time>${fmt(e.at)}</time><span class="lvl-${e.level}">${esc(e.message)}</span></div>`).join('') || '<p class="muted">Waiting for the first lead…</p>';
+  $('#leads').innerHTML = state.leads.map(l=>`<tr class="click" onclick="openLead('${l.id}')"><td><b>${esc(l.name)}</b><br><span class="muted" style="font-size:12px">${esc(l.phone||'')}</span></td><td>${esc(l.vehicle||'')}</td><td>${esc(l.source||'')}</td><td><span class="pill ${l.stage}">${STAGE[l.stage]}</span></td><td style="max-width:320px">${esc(l.summary||'')}</td><td class="muted" style="font-size:12px">${l.last_outbound_at?fmt(l.last_outbound_at):''}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No leads yet.</td></tr>';
+}
+function fmt(iso){ const d=new Date(iso); const today=new Date().toDateString()===d.toDateString(); return today? d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}) : d.toLocaleDateString([], {month:'short',day:'numeric'})+' '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }
+async function setMode(mode){ if (mode==='live' && !confirm('Go LIVE? Texts and emails will really be sent to customers under your name.')) return; state=await api('/api/settings',{mode}); renderDash(); }
+async function togglePause(){ state=await api('/api/settings',{paused:!state.paused}); renderDash(); }
+async function setStage(id, stage){ await api(`/api/lead/${id}/stage`,{stage}); refresh(); }
+async function reconnect(){ await api('/api/reconnect',{}); alert('A CDK window opened — log in once, then come back.'); }
+function startTeach(){ state.setupComplete=false; wizStep=6; wizDraft=null; renderWizard(); }
+async function demoLead(){ await api('/api/demo/lead',{}); setTimeout(refresh, 300); }
+async function openLead(id){
+  const r = await api(`/api/lead/${id}`); const l=r.lead;
+  const thread = (r.thread&&r.thread.length? r.thread : r.sends.map(s=>({direction:'outbound',channel:s.channel,body:s.body,at:s.at,mode:s.mode})));
+  $('#dlg-body').innerHTML = `<div class="row"><h2 style="margin:0">${esc(l.name)}</h2><span class="pill ${l.stage}">${STAGE[l.stage]}</span><div class="spacer"></div><button onclick="document.getElementById('dlg').close()">Close</button></div>
+    <p class="muted" style="margin:6px 0 10px">${esc(l.vehicle||'')} · ${esc(l.source||'')} · ${esc(l.phone||'')} · ${esc(l.email||'')}</p>
+    ${l.comment?`<p><i>"${esc(l.comment)}"</i></p>`:''}
+    <div class="thread">${thread.map(m=>`<div class="msg ${m.direction}">${esc(m.body)}<small>${m.direction==='inbound'?'Customer':'You'} · ${m.channel}${m.mode==='practice'?' · practice draft':''} · ${fmt(m.at)}</small></div>`).join('')||'<span class="muted">No messages yet.</span>'}</div>
+    <div class="row" style="margin-top:12px">${state.demo && l.stage!=='opted_out' ? `<input type="text" id="demo-reply" placeholder="Type what the customer says…" style="flex:1"><button onclick="demoReply('${l.id}')">Customer replies</button>`:''}
+    ${l.stage==='needs_you'?`<button onclick="setStage('${l.id}','engaged');document.getElementById('dlg').close()">I handled it — resume AI</button>`:''}
+    ${['new','contacted','engaged'].includes(l.stage)?`<button onclick="setStage('${l.id}','closed');document.getElementById('dlg').close()">Stop messaging this lead</button>`:''}</div>`;
+  $('#dlg').showModal();
+}
+async function demoReply(id){ const body=$('#demo-reply').value.trim(); if(!body) return; await api('/api/demo/reply',{id,body}); await api('/api/demo/tick',{}); openLead(id); refresh(); }
+function openSettings(){
+  const p=state.profile, t=state.telegram||{};
+  $('#dlg-body').innerHTML = `<div class="row"><h2 style="margin:0">Settings</h2><div class="spacer"></div><button onclick="document.getElementById('dlg').close()">Close</button></div>
+    <label>Your name</label><input type="text" id="s-repName" value="${esc(p.repName)}">
+    <label>Title</label><input type="text" id="s-repTitle" value="${esc(p.repTitle)}">
+    <label>Dealership</label><input type="text" id="s-storeName" value="${esc(p.storeName)}">
+    <label>What counts as an appointment</label><textarea id="s-appt">${esc(p.appointmentDefinition)}</textarea>
+    <label>Always say</label><input type="text" id="s-always" value="${esc(p.alwaysSay||'')}">
+    <label>Never say</label><input type="text" id="s-never" value="${esc(p.neverSay||'')}">
+    <label>Extra instructions for the AI (tone, things to mention)</label><textarea id="s-extra" placeholder="e.g. Keep it casual. Mention we're open Sundays.">${esc(p.extraInstructions||'')}</textarea>
+    <label>Activation key ${state.hasKey?'(set — leave blank to keep)':''}</label><input type="password" id="s-key" placeholder="sk-ant-...">
+    <label>Telegram bot token (optional — pings for appointments and Needs you)</label><input type="text" id="s-tg-token" value="${esc(t.botToken||'')}">
+    <label>Telegram chat id</label><input type="text" id="s-tg-chat" value="${esc(t.chatId||'')}">
+    <div class="actions"><button onclick="startTeach();document.getElementById('dlg').close()">Re-teach CDK</button><button class="primary" onclick="saveSettings()">Save</button></div>`;
+  $('#dlg').showModal();
+}
+async function saveSettings(){
+  const body = { profile: { repName:$('#s-repName').value.trim(), repTitle:$('#s-repTitle').value.trim(), storeName:$('#s-storeName').value.trim(), appointmentDefinition:$('#s-appt').value.trim(), alwaysSay:$('#s-always').value.trim(), neverSay:$('#s-never').value.trim(), extraInstructions:$('#s-extra').value.trim() } };
+  const key=$('#s-key').value.trim(); if (key) body.anthropicApiKey=key;
+  const tok=$('#s-tg-token').value.trim(), chat=$('#s-tg-chat').value.trim();
+  body.telegram = (tok||chat) ? {botToken:tok, chatId:chat} : null;
+  state = await api('/api/settings', body); $('#dlg').close(); renderDash();
+}
+refresh(); setInterval(()=>{ if (state && (state.setupComplete||state.demo) && !$('#dlg').open) refresh(); }, 5000);
+</script>
+</body>
+</html>

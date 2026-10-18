@@ -1,0 +1,55 @@
+{
+  "_comment": "Where things are on CDK Connect pages. Ships unmapped; Teach mode (src/crm/learn.ts) fills it in and writes ~/.lead-responder/cdk-selectors.json. Arrays are tried in order. Prefer data-testid, id, name, aria-label or stable visible text; never hashed class names.",
+  "mapped": false,
+  "version": 1,
+  "login": {
+    "loggedInProbe": [],
+    "loginFormProbe": ["input[type=password]", "form[action*=login]", "text=/sign in|log in/i"]
+  },
+  "leads": {
+    "listUrl": "",
+    "row": [],
+    "rowId": { "attr": "", "selector": [], "fallbackHrefPattern": "" },
+    "rowName": [],
+    "rowCreated": [],
+    "rowSource": [],
+    "rowVehicle": [],
+    "detailUrl": ""
+  },
+  "detail": {
+    "name": [],
+    "phone": [],
+    "email": [],
+    "vehicle": [],
+    "source": [],
+    "comment": [],
+    "created": [],
+    "stock": []
+  },
+  "messages": {
+    "item": [],
+    "body": [],
+    "time": [],
+    "inboundMarker": [],
+    "outboundMarker": [],
+    "smsMarker": [],
+    "emailMarker": []
+  },
+  "sendText": {
+    "openButton": [],
+    "body": [],
+    "sendButton": []
+  },
+  "sendEmail": {
+    "openButton": [],
+    "subject": [],
+    "body": [],
+    "sendButton": []
+  },
+  "templates": {
+    "url": "",
+    "item": [],
+    "name": [],
+    "body": []
+  }
+}
