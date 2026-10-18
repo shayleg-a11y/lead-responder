@@ -3,14 +3,19 @@
   "version": "0.1.0",
   "description": "AI lead responder for dealership salespeople — texts and emails every new internet lead from inside the CRM under the rep's name.",
   "type": "module",
-  "bin": { "lead-responder": "dist/index.js" },
-  "engines": { "node": ">=22.13" },
+  "bin": {
+    "lead-responder": "dist/index.js"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js start",
     "demo": "node dist/index.js start --demo",
     "test": "vitest run",
-    "postinstall": "playwright install chromium"
+    "postinstall": "playwright install chromium",
+    "e2e": "node e2e/cdk-adapter.e2e.mjs"
   },
   "dependencies": {
     "express": "^4.21.2",

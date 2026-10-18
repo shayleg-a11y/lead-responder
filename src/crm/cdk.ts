@@ -131,10 +131,23 @@ export class CdkAdapter implements CrmAdapter {
     fs.mkdirSync(this.profileDir, { recursive: true });
     this.ctx = await chromium.launchPersistentContext(this.profileDir, {
       headless: !headed,
+      // Optional: point at an installed Chrome/Chromium instead of Playwright's download.
+      executablePath: process.env.LEAD_RESPONDER_CHROME || undefined,
       viewport: { width: 1366, height: 900 },
       args: ["--disable-blink-features=AutomationControlled", "--no-first-run", "--no-default-browser-check"],
     });
     this.headed = headed;
+    // Chrome drops session cookies on exit, and many CRM logins are session cookies. We stash them on close
+    // (storageState) and re-add them here so a headed→headless relaunch keeps the rep logged in.
+    const statePath = path.join(this.profileDir, "..", "session-cookies.json");
+    try {
+      if (fs.existsSync(statePath)) {
+        const st = JSON.parse(fs.readFileSync(statePath, "utf8")) as { cookies?: Parameters<BrowserContext["addCookies"]>[0] };
+        if (st.cookies?.length) await this.ctx.addCookies(st.cookies);
+      }
+    } catch (e) {
+      this.log(`[cdk] could not restore session cookies: ${e instanceof Error ? e.message : e}`);
+    }
     this.page = this.ctx.pages()[0] ?? (await this.ctx.newPage());
     this.page.setDefaultTimeout(15_000);
     this.log(`[cdk] browser up (${headed ? "visible" : "hidden"})`);
@@ -142,6 +155,14 @@ export class CdkAdapter implements CrmAdapter {
   }
 
   async close(): Promise<void> {
+    try {
+      if (this.ctx) {
+        const st = await this.ctx.storageState();
+        fs.writeFileSync(path.join(this.profileDir, "..", "session-cookies.json"), JSON.stringify({ cookies: st.cookies }), { mode: 0o600 });
+      }
+    } catch {
+      /* ignore */
+    }
     try {
       await this.ctx?.close();
     } catch {
@@ -457,7 +478,7 @@ export class CdkAdapter implements CrmAdapter {
 
   /** Save html/png/url of the current page under SNAPSHOT_DIR/<label>.* */
   async snapshot(label: string): Promise<{ html: string; png: string; url: string }> {
-    const page = await this.showWindow();
+    const page = await this.ensureBrowser(this.headed);
     fs.mkdirSync(SNAPSHOT_DIR, { recursive: true });
     const safe = label.replace(/[^a-z0-9_-]+/gi, "_");
     const html = path.join(SNAPSHOT_DIR, `${safe}.html`);

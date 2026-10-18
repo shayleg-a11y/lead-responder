@@ -64,7 +64,7 @@ fi
 
 cd "$APP_DIR"
 say "Installing dependencies (this also downloads a private Chromium, ~150 MB)"
-npm install --no-audit --no-fund --loglevel=error
+npm install --include=dev --no-audit --no-fund --loglevel=error
 say "Building"
 npm run build --silent
 

@@ -49,7 +49,7 @@ if (Test-Path (Join-Path $AppDir ".git")) {
 }
 Set-Location $AppDir
 Say "Installing dependencies (downloads a private Chromium, ~150 MB)"
-npm install --no-audit --no-fund --loglevel=error
+npm install --include=dev --no-audit --no-fund --loglevel=error
 Say "Building"
 npm run build --silent
 

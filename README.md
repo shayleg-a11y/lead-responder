@@ -27,7 +27,7 @@ Then the rep walks the 5-minute wizard: CDK address → log in once (2FA fine; t
 ## Run from source
 
 ```bash
-npm install           # also downloads Chromium
+npm install --include=dev   # also downloads Chromium (TypeScript is a dev dep; the flag matters if NODE_ENV=production is set)
 npm run build
 npm test              # 20 tests: playbook rules + full engine loop on the mock CRM
 node dist/index.js start --demo     # fake CRM with auto-replying customers; "+ Demo lead" on the dashboard
